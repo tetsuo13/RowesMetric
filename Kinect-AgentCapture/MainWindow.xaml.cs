@@ -5,6 +5,7 @@
 
 namespace UNCG.CSC.anicholson
 {
+    using System;
     using System.IO;
     using System.Windows;
     using System.Windows.Media;
@@ -79,6 +80,13 @@ namespace UNCG.CSC.anicholson
         /// Drawing image that we will display
         /// </summary>
         private DrawingImage imageSource;
+
+        /// <summary>
+        /// Currently recording?
+        /// </summary>
+        private bool recording = false;
+
+        private StreamWriter dataFile;
 
         /// <summary>
         /// Initializes a new instance of the MainWindow class.
@@ -169,6 +177,7 @@ namespace UNCG.CSC.anicholson
                 try
                 {
                     this.sensor.Start();
+                    this.StartDataFile();
                 }
                 catch (IOException)
                 {
@@ -182,6 +191,27 @@ namespace UNCG.CSC.anicholson
             }
         }
 
+        private void StartDataFile()
+        {
+            string desktopFolder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            // TODO: Use unique filename.
+            string saveFileName = Path.Combine(desktopFolder, "data.json");
+            this.dataFile = new StreamWriter(saveFileName, false);
+
+            this.dataFile.WriteLine("{\n");
+            this.dataFile.WriteLine("    \"points\": [\n");
+        }
+
+        private void EndDataFile()
+        {
+            // Add empty array just so the previous line with a trailing
+            // comma isn't the last line in the array (invalid JSON).
+            this.dataFile.WriteLine("        []\n");
+            this.dataFile.WriteLine("    ]\n");
+            this.dataFile.WriteLine("}");
+            this.dataFile.Close();
+        }
+
         /// <summary>
         /// Execute shutdown tasks
         /// </summary>
@@ -192,6 +222,7 @@ namespace UNCG.CSC.anicholson
             if (null != this.sensor)
             {
                 this.sensor.Stop();
+                this.EndDataFile();
             }
         }
 
@@ -300,6 +331,21 @@ namespace UNCG.CSC.anicholson
                     drawingContext.DrawEllipse(drawBrush, null, this.SkeletonPointToScreen(joint.Position), JointThickness, JointThickness);
                 }
             }
+
+            if (this.recording)
+            {
+                this.RecordJoint(skeleton, JointType.HipCenter);
+            }
+        }
+
+        private void RecordJoint(Skeleton skeleton, JointType joint)
+        {
+            string json =
+                "        [" +
+                skeleton.Joints[joint].Position.X + ", " +
+                skeleton.Joints[joint].Position.Y +
+                "],\n";
+            this.dataFile.WriteLine(json);
         }
 
         /// <summary>
@@ -371,6 +417,11 @@ namespace UNCG.CSC.anicholson
                     this.sensor.SkeletonStream.TrackingMode = SkeletonTrackingMode.Default;
                 }
             }
+        }
+
+        private void ToggleRecording(object sender, RoutedEventArgs e)
+        {
+            this.recording = !this.recording;
         }
     }
 }
