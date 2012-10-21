@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace UNCG.CSC.anicholson.Properties
+namespace UNC.Greensboro.CSC.anicholson.Properties
 {
     using System;
     
