@@ -3,7 +3,7 @@
 // </copyright>
 //------------------------------------------------------------------------------
 
-namespace UNC.Greensboro.CSC.anicholson
+namespace UNC.Greensboro.CSC.FiveNineThree.anicholson
 {
     using System;
     using System.IO;
