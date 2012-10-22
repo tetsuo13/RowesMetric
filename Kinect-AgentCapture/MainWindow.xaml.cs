@@ -5,11 +5,15 @@
 
 namespace UNC.Greensboro.CSC.FiveNineThree.anicholson
 {
+    using Microsoft.Kinect;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Windows;
     using System.Windows.Media;
-    using Microsoft.Kinect;
+    using System.Windows.Threading;
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -87,6 +91,23 @@ namespace UNC.Greensboro.CSC.FiveNineThree.anicholson
         private bool recording = false;
 
         private StreamWriter dataFile;
+        private int counterTime;
+        private DispatcherTimer recordingCountdownTimer;
+
+        /// <summary>
+        /// Existing collection of agents from data file.
+        /// </summary>
+        private Agents agents;
+
+        /// <summary>
+        /// Current agent being recorded.
+        /// </summary>
+        private Agent agent;
+
+        /// <summary>
+        /// Number of seconds until recording starts automatically.
+        /// </summary>
+        private const int countdownLength = 5;
 
         /// <summary>
         /// Initializes a new instance of the MainWindow class.
@@ -152,6 +173,8 @@ namespace UNC.Greensboro.CSC.FiveNineThree.anicholson
             // Display the drawing using our image control
             Image.Source = this.imageSource;
 
+            this.UpdatePositionLabel(0, 0, 0);
+
             // Look through all sensors and start the first connected one.
             // This requires that a Kinect is connected at the time of app startup.
             // To make your app robust against plug/unplug, 
@@ -177,7 +200,17 @@ namespace UNC.Greensboro.CSC.FiveNineThree.anicholson
                 try
                 {
                     this.sensor.Start();
-                    this.StartDataFile();
+
+                    // Initialize existing database. We'll be appending to it.
+                    this.ReadAgentDatabase();
+
+                    // Initialize this agent's data.
+                    this.agent = new Agent();
+                    this.agent.deceptive = false;
+                    this.agent.agentId = this.GetNextAgentId();
+
+                    //this.StartDataFile();
+                    this.StartRecordingCountdown();
                 }
                 catch (IOException)
                 {
@@ -187,29 +220,67 @@ namespace UNC.Greensboro.CSC.FiveNineThree.anicholson
 
             if (null == this.sensor)
             {
-                this.statusBarText.Text = Properties.Resources.NoKinectReady;
+                //this.statusBarText.Text = Properties.Resources.NoKinectReady;
             }
         }
 
-        private void StartDataFile()
+        private uint GetNextAgentId()
         {
-            string desktopFolder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            // TODO: Use unique filename.
-            string saveFileName = Path.Combine(desktopFolder, "data.json");
-            this.dataFile = new StreamWriter(saveFileName, false);
+            uint nextAgentId = 0;
 
-            this.dataFile.WriteLine("{\n");
-            this.dataFile.WriteLine("    \"points\": [\n");
+            foreach (var agent in this.agents.agents)
+            {
+                if (agent.agentId > nextAgentId)
+                {
+                    nextAgentId = agent.agentId;
+                }
+            }
+
+            return ++nextAgentId;
         }
 
-        private void EndDataFile()
+        private void StartRecordingCountdown()
         {
-            // Add empty array just so the previous line with a trailing
-            // comma isn't the last line in the array (invalid JSON).
-            this.dataFile.WriteLine("        []\n");
-            this.dataFile.WriteLine("    ]\n");
-            this.dataFile.WriteLine("}");
-            this.dataFile.Close();
+            this.recordingCountdownTimer = new DispatcherTimer();
+            this.recordingCountdownTimer.Tick += new EventHandler(counter_Tick);
+            this.recordingCountdownTimer.Interval = new TimeSpan(0, 0, 1);
+
+            this.counterTime = MainWindow.countdownLength;
+            this.recordingCountdownTimer.Start();
+        }
+
+        private void counter_Tick(object sender, EventArgs e)
+        {
+            if (this.counterTime > 0)
+            {
+                this.counterTime--;
+                this.recordingCountdown.Content = this.counterTime.ToString();
+            }
+            else
+            {
+                this.recordingCountdownTimer.Stop();
+                this.recording = true;
+                this.recordingCountdown.Content = "";
+            }
+        }
+
+        private string GetPathToDataFile()
+        {
+            string desktopFolder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            return Path.Combine(desktopFolder, "data.json");
+        }
+
+        private void ReadAgentDatabase()
+        {
+            try
+            {
+                string json = File.ReadAllText(this.GetPathToDataFile());
+                this.agents = (Agents)JsonConvert.DeserializeObject(json, typeof(Agents));
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                this.agents = new Agents();
+            }
         }
 
         /// <summary>
@@ -222,8 +293,15 @@ namespace UNC.Greensboro.CSC.FiveNineThree.anicholson
             if (null != this.sensor)
             {
                 this.sensor.Stop();
-                this.EndDataFile();
+                this.AddAgentToDatabase();
             }
+        }
+
+        private void AddAgentToDatabase()
+        {
+            this.agents.agents.Add(this.agent);
+            string json = JsonConvert.SerializeObject(this.agents, Formatting.Indented);
+            File.WriteAllText(this.GetPathToDataFile(), json);
         }
 
         /// <summary>
@@ -332,20 +410,37 @@ namespace UNC.Greensboro.CSC.FiveNineThree.anicholson
                 }
             }
 
+            this.UpdatePositionLabel(skeleton, JointType.HipCenter);
+
             if (this.recording)
             {
                 this.RecordJoint(skeleton, JointType.HipCenter);
             }
         }
 
+        private void UpdatePositionLabel(float x, float y, float z)
+        {
+            this.position.Text = String.Format("x: {0,-10} y: {1,-15} z: {2,-15}",
+                x, y, z);
+        }
+
+        private void UpdatePositionLabel(Skeleton skeleton, JointType joint)
+        {
+            this.UpdatePositionLabel(skeleton.Joints[joint].Position.X,
+                skeleton.Joints[joint].Position.Y,
+                skeleton.Joints[joint].Position.Z);
+        }
+
         private void RecordJoint(Skeleton skeleton, JointType joint)
         {
-            string json =
-                "        [" +
-                skeleton.Joints[joint].Position.X + ", " +
-                skeleton.Joints[joint].Position.Y +
-                "],\n";
-            this.dataFile.WriteLine(json);
+            float[] position = {skeleton.Joints[joint].Position.X, skeleton.Joints[joint].Position.Z};
+            this.agent.positions.Add(position);
+            //string json =
+            //    "        [" +
+            //    skeleton.Joints[joint].Position.X + ", " +
+            //    skeleton.Joints[joint].Position.Z +
+            //    "],";
+            //this.dataFile.WriteLine(json);
         }
 
         /// <summary>
@@ -397,26 +492,6 @@ namespace UNC.Greensboro.CSC.FiveNineThree.anicholson
             }
 
             drawingContext.DrawLine(drawPen, this.SkeletonPointToScreen(joint0.Position), this.SkeletonPointToScreen(joint1.Position));
-        }
-
-        /// <summary>
-        /// Handles the checking or unchecking of the seated mode combo box
-        /// </summary>
-        /// <param name="sender">object sending the event</param>
-        /// <param name="e">event arguments</param>
-        private void CheckBoxSeatedModeChanged(object sender, RoutedEventArgs e)
-        {
-            if (null != this.sensor)
-            {
-                if (this.checkBoxSeatedMode.IsChecked.GetValueOrDefault())
-                {
-                    this.sensor.SkeletonStream.TrackingMode = SkeletonTrackingMode.Seated;
-                }
-                else
-                {
-                    this.sensor.SkeletonStream.TrackingMode = SkeletonTrackingMode.Default;
-                }
-            }
         }
 
         private void ToggleRecording(object sender, RoutedEventArgs e)

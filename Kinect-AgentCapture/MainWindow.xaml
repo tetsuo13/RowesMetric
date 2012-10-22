@@ -1,7 +1,8 @@
 ﻿<Window x:Class="UNC.Greensboro.CSC.FiveNineThree.anicholson.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Skeleton Basics" Height="735" Width="770" Loaded="WindowLoaded" Closing="WindowClosing">
+        Title="Agent Capture" Height="735" Width="770" Loaded="WindowLoaded" Closing="WindowClosing"
+        Top="0">
 
     <Window.Resources>
         <SolidColorBrush x:Key="MediumGreyBrush" Color="#ff6e6e6e"/>
@@ -45,25 +46,23 @@
 
     <Grid Name="layoutGrid" Margin="10 0 10 0">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="86"/>
+            <RowDefinition Height="600*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <DockPanel Grid.Row="0" Margin="0 0 0 20">
+        <DockPanel Margin="0,0,0,39">
             <Image DockPanel.Dock="Left" Source="Images\Logo.png" Stretch="None" Margin="0 10 0 5"/>
             <TextBlock DockPanel.Dock="Right" VerticalAlignment="Bottom" Foreground="{StaticResource MediumGreyBrush}" FontFamily="Segoe UI" FontSize="18">Agent Capture</TextBlock>
             <Image Grid.Column="1" Source="Images\Status.png" Stretch="None" HorizontalAlignment="Center" Margin="0 0 0 5"/>
         </DockPanel>
-        <Viewbox Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Left">
-            <Image Name="Image" Width="640" Height="480"/>
+        <Viewbox Stretch="Uniform" HorizontalAlignment="Left" Margin="0,48,0,0" Grid.RowSpan="2">
+            <Image Name="Image" Width="640" Height="550"/>
         </Viewbox>
-        <CheckBox Grid.Row="2" Style="{StaticResource SquareCheckBox}" Content="Seated Mode" Height="Auto" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0 10 10 10" Name="checkBoxSeatedMode" Checked="CheckBoxSeatedModeChanged" Unchecked="CheckBoxSeatedModeChanged"/>
         <StatusBar Grid.Row="3" HorizontalAlignment="Stretch" Name="statusBar" VerticalAlignment="Bottom" Background="White" Foreground="{StaticResource MediumGreyBrush}">
-            <StatusBarItem Padding="0 0 0 10">
-                <TextBlock Name="statusBarText" Margin="0">Click 'Seated' to change skeletal pipeline type!</TextBlock>
-            </StatusBarItem>
+            <StatusBarItem Padding="0 0 0 10"></StatusBarItem>
         </StatusBar>
-        <Button Content="Record Agent's Movements" Grid.Row="2" Height="23" HorizontalAlignment="Center" Margin="563,11,0,0" Name="button1" VerticalAlignment="Top" Width="153" Click="ToggleRecording" />
+        <TextBlock Grid.Row="1" Height="23" HorizontalAlignment="Left" Margin="12,575,0,0" Name="position" FontSize="18" Text="Agent Position" VerticalAlignment="Top" FontFamily="Consolas" />
+        <Label Content="5" Grid.Row="1" Height="28" HorizontalAlignment="Right" Margin="692,570,0,0" Name="recordingCountdown" VerticalAlignment="Top" />
     </Grid>
 </Window>
