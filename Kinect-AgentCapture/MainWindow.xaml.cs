@@ -209,7 +209,6 @@ namespace UNC.Greensboro.CSC.FiveNineThree.anicholson
                     this.agent.deceptive = false;
                     this.agent.agentId = this.GetNextAgentId();
 
-                    //this.StartDataFile();
                     this.StartRecordingCountdown();
                 }
                 catch (IOException)
@@ -261,6 +260,10 @@ namespace UNC.Greensboro.CSC.FiveNineThree.anicholson
                 this.recordingCountdownTimer.Stop();
                 this.recording = true;
                 this.recordingCountdown.Content = "";
+
+                // Toggle application title so it's clear from 15 ft. away that recording has started.
+                this.AppTitle.Background = Brushes.Green;
+                this.AppTitle.Foreground = Brushes.White;
             }
         }
 
