@@ -16,6 +16,9 @@
 #    (how many times this (x,y) has been observed before) / (total positions)
 #
 
+
+#If n(x,y) is 1, p(x,y) = 0
+
 # Make all divisions result in a float.
 from __future__ import division
 
@@ -116,10 +119,33 @@ def suspiciousness(t):
 
 # n(i,t)
 #def noticeability(agent_num, position):
-def noticeability(agent, t):
+def noticeability(database, top_left, bottom_right):
+    """Calculate noticeability of non-deceptive agents in rectangle.
+    """
+    # Find the agents who have paths crossing into this region.
+    # Note if any of those agents are deceptive.
+    # If deceptive, use inverse probability.
+    # Return noticeability.
     x, y = agent['positions'][t][0], agent['positions'][t][1]
     return k3 / (k3 + probability_at_location(agent, x, y))
 
+class Grid:
+    num_divisions = 7
+
+    def __init__(self, database):
+        self.find_bounding_box(database)
+        self.find_division_points()
+
+    def find_bounding_box(self, database):
+        top_left = [min([position[0] for agent in database['agents'] for position in agent['positions']]),
+                    max([position[1] for agent in database['agents'] for position in agent['positions']])]
+        bottom_right = [max([position[0] for agent in database['agents'] for position in agent['positions']]),
+                        min([position[1] for agent in database['agents'] for position in agent['positions']])]
+        self.bounding_box = [top_left, bottom_right]
+
+    def find_division_points(self):
+        self.divide = [abs(self.bounding_box[1][0] - self.bounding_box[0][0]) / self.num_divisions,
+                       abs(self.bounding_box[1][1] - self.bounding_box[0][1]) / self.num_divisions]
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -127,6 +153,22 @@ if __name__ == '__main__':
         sys.exit()
 
     database = setup_database(sys.argv[1])
+
+    grid = Grid(database)
+    #print grid.bounding_box
+    #print grid.divide
+
+    top_left = grid.bounding_box[0]
+    bottom_right = [grid.bounding_box[0][0] + grid.divide[0], grid.bounding_box[0][1] - grid.divide[1]]
+    print top_left
+    print bottom_right
+    sys.exit()
+    print noticeability(database, top_left, bottom_right)
+
+    for i in range(0, grid.num_divisions + 1):
+        print grid.bounding_box[0][0] + (i * grid.divide[0])
+
+    sys.exit()
 
     # Find largest time interval recorded.
     T = max([len(agent['positions']) for agent in database['agents']])
