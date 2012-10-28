@@ -3,8 +3,12 @@
 # By Andrei Nicholson
 # Mentored by Dr. Shan Suthaharan
 
+# Make all divisions result in a float.
+from __future__ import division
+
 class Grid:
-    """Class to manage the bounding box grid over all agent positions
+    """Class to manage the bounding box grid over all agent positions.
+
     """
 
     # TODO: Calculating this number is another project in itself. Should be

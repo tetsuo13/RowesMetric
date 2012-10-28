@@ -3,13 +3,16 @@
 # By Andrei Nicholson
 # Mentored by Dr. Shan Suthaharan
 
-NOT_APPLICABLE = '--'
+# Make all divisions result in a float.
+from __future__ import division
 
-# p(x,y)
+from RoweMetric import globals
+
 def probability_in_region(database, top_left, bottom_right):
     """Calculate the probability of observing an ordinary agent in a region.
 
     Returns two probability values for region: ordinary agent, deceptive agent.
+
     """
     deceptive_agents = []
     nondeceptive_agents = []
@@ -32,16 +35,13 @@ def probability_in_region(database, top_left, bottom_right):
 
     num_agents = len(deceptive_agents) + len(nondeceptive_agents)
 
-    if num_agents == 0:
-        return NOT_APPLICABLE, NOT_APPLICABLE
-
     if len(nondeceptive_agents) == 0:
-        p_nondeceptive = NOT_APPLICABLE
+        p_nondeceptive = globals.NOT_APPLICABLE
     else:
         p_nondeceptive = len(nondeceptive_agents) / num_agents
 
     if len(deceptive_agents) == 0:
-        p_deceptive = NOT_APPLICABLE
+        p_deceptive = globals.NOT_APPLICABLE
     else:
         p_deceptive = len(deceptive_agents) / num_agents
 
@@ -49,14 +49,16 @@ def probability_in_region(database, top_left, bottom_right):
 
 def do_noticeability(database, top_left, bottom_right):
     """Calculate noticeability of non-deceptive and deceptive agents in region.
+
     """
     def calculate_noticeability(p_agent):
+        # TODO: Needs to be a calculation of something.
         k3 = 1
-        if p_agent == NOT_APPLICABLE:
+        if p_agent == globals.NOT_APPLICABLE:
             return p_agent
         if p_agent == 0:
             return 0
-        return k3 / (k3 + p_agent)
+        return round(k3 / (k3 + p_agent), 4)
 
     p_nondeceptive, p_deceptive = probability_in_region(database, top_left,
                                                         bottom_right)
