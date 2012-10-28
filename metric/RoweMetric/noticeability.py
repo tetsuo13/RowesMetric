@@ -53,7 +53,7 @@ def do_noticeability(database, top_left, bottom_right):
     """
     def calculate_noticeability(p_agent):
         # TODO: Needs to be a calculation of something.
-        k3 = 1
+        k3 = 0.001
         if p_agent == globals.NOT_APPLICABLE:
             return p_agent
         if p_agent == 0:
