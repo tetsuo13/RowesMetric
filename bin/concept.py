@@ -28,13 +28,10 @@ import sys
 
 k1 = 0.5
 k2 = 0.5
-k3 = 0.25
-
-# Radius to map around a position. Other agent position's are then checked to be
-# within bounds.
-probability_position_radius = 0.05
 
 database = []
+
+NOT_APPLICABLE = '--'
 
 def calculate_speed(position_1, position_2):
     """
@@ -98,13 +95,21 @@ def probability_in_region(database, top_left, bottom_right):
             pass
 
     num_agents = len(deceptive_agents) + len(nondeceptive_agents)
-    print deceptive_agents, nondeceptive_agents
 
     if num_agents == 0:
-        return 0, 0
+        return NOT_APPLICABLE, NOT_APPLICABLE
 
-    return (len(nondeceptive_agents) / num_agents, 
-            len(deceptive_agents) / num_agents)
+    if len(nondeceptive_agents) == 0:
+        p_nondeceptive = NOT_APPLICABLE
+    else:
+        p_nondeceptive = len(nondeceptive_agents) / num_agents
+
+    if len(deceptive_agents) == 0:
+        p_deceptive = NOT_APPLICABLE
+    else:
+        p_deceptive = len(deceptive_agents) / num_agents
+
+    return [p_nondeceptive, p_deceptive]
 
 # q(s,h)
 def probability_speed_and_heading(i):
@@ -119,81 +124,83 @@ def suspiciousness(t):
     return k1 / (k1 + probability_in_region(x, y) * probability_speed_and_heading(t))
 
 def noticeability(database, top_left, bottom_right):
-    """Calculate noticeability of non-deceptive agents in rectangle.
+    """Calculate noticeability of non-deceptive and deceptive agents in region.
     """
-    k3 = 0.1
+    def calculate_noticeability(p_agent):
+        k3 = 1
+        if p_agent == NOT_APPLICABLE:
+            return p_agent
+        if p_agent == 0:
+            return 0
+        return k3 / (k3 + p_agent)
 
     p_nondeceptive, p_deceptive = probability_in_region(database, top_left,
                                                         bottom_right)
 
-    print p_deceptive, p_nondeceptive
-
-    # No probability to observe a nondeceptive agent means no noticeability.
-    if p_nondeceptive == 0:
-        return 0
-
-    return k3 / (k3 + p_nondeceptive)
+    return [calculate_noticeability(p_nondeceptive),
+            calculate_noticeability(p_deceptive)]
 
 class Grid:
+    # TODO: Calculating this number is another project in itself.
     num_divisions = 7
 
     def __init__(self, database):
-        self.find_bounding_box(database)
-        self.find_division_points()
+        self._find_bounding_box(database)
+        self._find_division_points()
 
-    def find_bounding_box(self, database):
+    def _find_bounding_box(self, database):
         top_left = [min([position[0] for agent in database['agents'] for position in agent['positions']]),
                     max([position[1] for agent in database['agents'] for position in agent['positions']])]
         bottom_right = [max([position[0] for agent in database['agents'] for position in agent['positions']]),
                         min([position[1] for agent in database['agents'] for position in agent['positions']])]
         self.bounding_box = [top_left, bottom_right]
 
-    def find_division_points(self):
+    def _find_division_points(self):
         self.divide = [abs(self.bounding_box[1][0] - self.bounding_box[0][0]) / self.num_divisions,
                        abs(self.bounding_box[1][1] - self.bounding_box[0][1]) / self.num_divisions]
+
+    def calculate_regions(self, database):
+        """Calculate top-left and bottom-right coordinates for each region.
+
+        Start at top-left-most region and work down rows, start at the top for each
+        new column.
+        """
+        regions = []
+        for x in range(0, self.num_divisions):
+            for y in range(0, self.num_divisions):
+                top_left = [self.bounding_box[0][0] + (x * self.divide[0]),
+                            self.bounding_box[0][1] - (y * self.divide[1])]
+                bottom_right = [self.bounding_box[0][0] + ((x + 1) * self.divide[0]),
+                                self.bounding_box[0][1] - ((y + 1) * self.divide[1])]
+                regions.append([top_left, bottom_right])
+        return regions
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print 'Requires path to data file'
         sys.exit()
 
+    # Only process regions in this list. Leave empty to process all regions.
+    restrict_to_regions = [38]
+
+    # Read in database of agents from Kinect.
     database = setup_database(sys.argv[1])
 
+    # Set up bounding box around agent positions.
     grid = Grid(database)
 
-    for i in range(0, grid.num_divisions):
-        top_left = [grid.bounding_box[0][0], grid.bounding_box[0][1] - (i * grid.divide[1])]
-        bottom_right = [grid.bounding_box[0][0] + grid.divide[0], grid.bounding_box[0][1] - ((i + 1) * grid.divide[1])]
-        print 'Region', str(i)
-        print noticeability(database, top_left, bottom_right)
-    sys.exit()
+    # Prepare all regions within bounding box.
+    regions = grid.calculate_regions(database)
 
-    for i in range(0, grid.num_divisions + 1):
-        print grid.bounding_box[0][0] + (i * grid.divide[0])
-
-    sys.exit()
-
-    # Find largest time interval recorded.
-    T = max([len(agent['positions']) for agent in database['agents']])
-
-    # Number of agents.
-    N = len(database['agents'])
-
-    for t in range(0, 25):
-        print t, noticeability(agent, t)
-
-    sys.exit()
-
-
-    print 'Time'.ljust(7), '|',
-    for i in range(1, N + 1):
-        print ('Path ' + str(i)).ljust(7), '|',
+    print 'n(region) = [non-deceptive, deceptive]'
     print
 
-    for t in range(0, T):
-        print str(t).ljust(7), '|',
-
-        for i in range(0, N):
-            print str(round(noticeability(i, database[i].positions[t]), 4)).ljust(7), '|',
-
-        print
+    if len(restrict_to_regions) > 0:
+        for region_num in restrict_to_regions:
+            print 'Region', str(region_num),
+            print noticeability(database, regions[region_num][0],
+                                regions[region_num][1])
+    else:
+        for i, region in enumerate(regions):
+            print 'Region', str(i),
+            print noticeability(database, region[0], region[1])
