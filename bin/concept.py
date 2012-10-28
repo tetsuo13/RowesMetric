@@ -73,37 +73,38 @@ def setup_database(data_file_path):
     return json.loads(data_file)
 
 # p(x,y)
-def probability_at_location(current_agent, x, y):
-    """Calculate the probability of other agents being at a location.
+def probability_in_region(database, top_left, bottom_right):
+    """Calculate the probability of observing an ordinary agent in a region.
 
-    The probability is done by using a radius search around the given position
-    against all available positions for all other agents. Final result is how
-    many other agents are within the radius.
+    Returns two probability values for region: ordinary agent, deceptive agent.
     """
+    deceptive_agents = []
+    nondeceptive_agents = []
 
-    def within_radius(center_x, center_y, radius, x, y):
-        """Whether a point is within a circle.
-        """
-        square_dist = (center_x - x) ** 2 + (center_y - y) ** 2
-        return square_dist <= radius ** 2
+    # Find the agents who have paths crossing into this region.
+    for agent in database['agents']:
+        try:
+            for position in agent['positions']:
+                if (position[0] >= top_left[0] and position[0] <= bottom_right[0] and
+                    position[1] <= top_left[1] and position[1] >= bottom_right[1]):
+                    if agent['deceptive']:
+                        deceptive_agents.append(agent['agentid'])
+                    else:
+                        nondeceptive_agents.append(agent['agentid'])
 
-    # Number of times another agent was found within this radius.
-    encountered = 0
+                    # No need to process anything further for this agent.
+                    raise Exception
+        except Exception:
+            pass
 
-    for i, agent in enumerate(database['agents']):
-        # Skip examining current agent since it'll be a 100% probability match.
-        if agent['agentid'] == current_agent['agentid']:
-            continue
+    num_agents = len(deceptive_agents) + len(nondeceptive_agents)
+    print deceptive_agents, nondeceptive_agents
 
-        for position in agent['positions']:
-            if within_radius(x, y, probability_position_radius, position[0],
-                             position[1]):
-                encountered += 1
+    if num_agents == 0:
+        return 0, 0
 
-    try:
-        return 1 / encountered
-    except ZeroDivisionError:
-        return 1
+    return (len(nondeceptive_agents) / num_agents, 
+            len(deceptive_agents) / num_agents)
 
 # q(s,h)
 def probability_speed_and_heading(i):
@@ -115,19 +116,23 @@ def probability_speed_and_heading(i):
 # s(t)
 def suspiciousness(t):
     x, y = t[0], t[1]
-    return k1 / (k1 + probability_at_location(x, y) * probability_speed_and_heading(t))
+    return k1 / (k1 + probability_in_region(x, y) * probability_speed_and_heading(t))
 
-# n(i,t)
-#def noticeability(agent_num, position):
 def noticeability(database, top_left, bottom_right):
     """Calculate noticeability of non-deceptive agents in rectangle.
     """
-    # Find the agents who have paths crossing into this region.
-    # Note if any of those agents are deceptive.
-    # If deceptive, use inverse probability.
-    # Return noticeability.
-    x, y = agent['positions'][t][0], agent['positions'][t][1]
-    return k3 / (k3 + probability_at_location(agent, x, y))
+    k3 = 0.1
+
+    p_nondeceptive, p_deceptive = probability_in_region(database, top_left,
+                                                        bottom_right)
+
+    print p_deceptive, p_nondeceptive
+
+    # No probability to observe a nondeceptive agent means no noticeability.
+    if p_nondeceptive == 0:
+        return 0
+
+    return k3 / (k3 + p_nondeceptive)
 
 class Grid:
     num_divisions = 7
@@ -155,15 +160,13 @@ if __name__ == '__main__':
     database = setup_database(sys.argv[1])
 
     grid = Grid(database)
-    #print grid.bounding_box
-    #print grid.divide
 
-    top_left = grid.bounding_box[0]
-    bottom_right = [grid.bounding_box[0][0] + grid.divide[0], grid.bounding_box[0][1] - grid.divide[1]]
-    print top_left
-    print bottom_right
+    for i in range(0, grid.num_divisions):
+        top_left = [grid.bounding_box[0][0], grid.bounding_box[0][1] - (i * grid.divide[1])]
+        bottom_right = [grid.bounding_box[0][0] + grid.divide[0], grid.bounding_box[0][1] - ((i + 1) * grid.divide[1])]
+        print 'Region', str(i)
+        print noticeability(database, top_left, bottom_right)
     sys.exit()
-    print noticeability(database, top_left, bottom_right)
 
     for i in range(0, grid.num_divisions + 1):
         print grid.bounding_box[0][0] + (i * grid.divide[0])
