@@ -1,26 +1,19 @@
-﻿#http://matplotlib.org/users/pyplot_tutorial.html
+﻿# UNC Greensboro, CSC 593, Fall 2012
+#
+# By Andrei Nicholson
+# Mentored by Dr. Shan Suthaharan
+
+"""
+Notes:
+
+http://matplotlib.org/users/pyplot_tutorial.html
+"""
 
 import json
 import matplotlib.pyplot as pyplot
 import sys
 
-class Grid:
-    num_divisions = 7
-
-    def __init__(self, database):
-        self.find_bounding_box(database)
-        self.find_division_points()
-
-    def find_bounding_box(self, database):
-        top_left = [min([position[0] for agent in database['agents'] for position in agent['positions']]),
-                    max([position[1] for agent in database['agents'] for position in agent['positions']])]
-        bottom_right = [max([position[0] for agent in database['agents'] for position in agent['positions']]),
-                        min([position[1] for agent in database['agents'] for position in agent['positions']])]
-        self.bounding_box = [top_left, bottom_right]
-
-    def find_division_points(self):
-        self.divide = [abs(self.bounding_box[1][0] - self.bounding_box[0][0]) / self.num_divisions,
-                       abs(self.bounding_box[1][1] - self.bounding_box[0][1]) / self.num_divisions]
+from RoweMetric import grid
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -33,7 +26,7 @@ if __name__ == '__main__':
     data_file = open(sys.argv[1]).read()
     database = json.loads(data_file)
 
-    grid = Grid(database)
+    grid = grid.Grid(database)
 
     for agent in database['agents']:
         if len(restrict_to_agents) > 0 and not agent['agentid'] in restrict_to_agents:
