@@ -27,14 +27,19 @@ if __name__ == '__main__':
         print 'Requires path to data file'
         sys.exit()
 
+    # Agent IDs to plot. Left blank all agents will be plotted.
+    restrict_to_agents = []
+
     data_file = open(sys.argv[1]).read()
     database = json.loads(data_file)
 
     grid = Grid(database)
 
     for agent in database['agents']:
+        if len(restrict_to_agents) > 0 and not agent['agentid'] in restrict_to_agents:
+            continue
         pyplot.plot([position[0] for position in agent['positions']],
-                    [position[1] for position in agent['positions']])
+                    [position[1] for position in agent['positions']], label=str(agent['agentid']))
 
     left_most = grid.bounding_box[0][0]
     right_most = grid.bounding_box[0][0] + (grid.num_divisions * grid.divide[0])
@@ -50,7 +55,17 @@ if __name__ == '__main__':
                     [top_most, bottom_most],
                     'r--', alpha=0.3)
 
+    # Label the regions.
+    region = 0
+    for x in range(0, grid.num_divisions):
+        for y in range(0, grid.num_divisions):
+            pyplot.text(grid.bounding_box[0][0] + (x * grid.divide[0]) + 0.065,
+                        grid.bounding_box[0][1] - (y * grid.divide[1]) - 0.3,
+                        str(region))
+            region += 1
+
     pyplot.ylabel('y')
     pyplot.xlabel('x')
     pyplot.title('Agent positions')
+    pyplot.legend()
     pyplot.show()
