@@ -6,17 +6,24 @@
 # Make all divisions result in a float.
 from __future__ import division
 
-NOT_APPLICABLE = '--'
+from RoweMetric import exposure
+from RoweMetric import globals
+from RoweMetric import noticeability
 
-# q(s,h)
-def probability_speed_and_heading(i):
+def probability_speed_and_heading(database, top_left, bottom_left):
     position_2 = get_second_operand(i, position)
 
-    heading = calculate_heading(position[i], position_2)
+    heading = average_heading(position[i], position_2)
     distance = calculate_speed(position[i], position_2)
 
-# s(t)
-def suspiciousness(t):
+def do_suspiciousness(database, top_left, bottom_right):
+    p_nondeceptive, p_deceptive = exposure.probability_in_region(database,
+                                                                 top_left,
+                                                                 bottom_right)
+    s_nondeceptive, s_deceptive = probability_speed_and_heading(database,
+                                                                top_left,
+                                                                bottom_right)
+
     x, y = t[0], t[1]
     return k1 / (k1 + probability_in_region(x, y) * probability_speed_and_heading(t))
 
@@ -30,7 +37,7 @@ def calculate_speed(position_1, position_2):
     x2, y2 = position_2[0], position_2[1]
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-def calculate_heading(position_1, position_2):
+def average_heading(position_1, position_2):
     x1, y1 = position_1[0], position_1[1]
     x2, y2 = position_2[0], position_2[1]
 
