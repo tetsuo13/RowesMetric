@@ -46,3 +46,10 @@ class Grid:
                                 self.bounding_box[0][1] - ((y + 1) * self.divide[1])]
                 regions.append([top_left, bottom_right])
         return regions
+
+    def area_of_region(self):
+        """Calculate the area of a region.
+
+        """
+        length = abs(self.bounding_box[0][0] + self.divide[0] - self.bounding_box[0][0])
+        return length * length

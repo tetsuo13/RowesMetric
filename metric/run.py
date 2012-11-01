@@ -64,10 +64,12 @@ if __name__ == '__main__':
         for region_num in restrict_to_regions:
             print 'Region', str(region_num),
             print noticeability.do_noticeability(database,
+                                                 grid.area_of_region(),
                                                  regions[region_num][0],
                                                  regions[region_num][1])
     else:
         for i, region in enumerate(regions):
             print 'Region', str(i),
-            print noticeability.do_noticeability(database, region[0],
-                                                 region[1])
+            print noticeability.do_noticeability(database,
+                                                 grid.area_of_region(),
+                                                 region[0], region[1])
