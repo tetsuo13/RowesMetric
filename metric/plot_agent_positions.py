@@ -7,15 +7,25 @@
 Notes:
 
 http://matplotlib.org/users/pyplot_tutorial.html
+http://matplotlib.org/examples/pylab_examples/hexbin_demo.html
 """
 
+import matplotlib.cm as cm
 import matplotlib.pyplot as pyplot
 import sys
 
 from RoweMetric.database import setup_database
+from RoweMetric import globals
 from RoweMetric import grid
+from RoweMetric import noticeability
 
-def draw_grid_overlay(grid):
+class OutputType:
+    AGENT_POSITIONS = 1
+    GRID_OVERLAY = 2
+    GRID_WITH_RESULTS = 3
+    HEATMAP = 4
+
+def draw_grid_overlay(grid, show_region_id):
     grid_alpha = 0.5
 
     left_most = grid.bounding_box[0][0]
@@ -33,17 +43,44 @@ def draw_grid_overlay(grid):
                     [top_most, bottom_most],
                     'r--', alpha=grid_alpha)
 
-    # Label the regions.
-    region = 0
+    if show_region_id:
+        region = 0
+        for x in range(0, grid.num_divisions):
+            for y in range(0, grid.num_divisions):
+                pyplot.text(grid.bounding_box[0][0] + (x * grid.divide[0]) + 0.065,
+                            grid.bounding_box[0][1] - (y * grid.divide[1]) - 0.3,
+                            str(region))
+                region += 1
+    else:
+        draw_noticeability_in_grid(database, grid)
+
+def noticeability_for_regions(grid, database):
+    area_of_region = grid.area_of_region()
+    regions = grid.calculate_regions(database)
+    n = []
+    for region in regions:
+        n.append(noticeability.do_noticeability(database, area_of_region,
+                                                region[0], region[1]))
+    return n
+
+def draw_noticeability_in_grid(database, grid):
+    n = noticeability_for_regions(grid, database)
+    n_i = 0
+
     for x in range(0, grid.num_divisions):
         for y in range(0, grid.num_divisions):
-            pyplot.text(grid.bounding_box[0][0] + (x * grid.divide[0]) + 0.065,
-                        grid.bounding_box[0][1] - (y * grid.divide[1]) - 0.3,
-                        str(region))
-            region += 1
+            if (n[i][0] == globals.NOT_APPLICABLE and
+                n[i][1] == globals.NOT_APPLICABLE):
+                n_i += 1
+                continue
 
-def plot_agent_positions(database, restrict_to_agents, show_grid):
-    if show_grid:
+            pyplot.text(grid.bounding_box[0][0] + (x * grid.divide[0]) + 0.025,
+                        grid.bounding_box[0][1] - (y * grid.divide[1]) - 0.35,
+                        str(n[i][0]) + '\n' + str(n[i][1]))
+            n_i += 1
+
+def plot_agent_positions(database, restrict_to_agents, output_type):
+    if output_type == OutputType.GRID_OVERLAY:
         agent_alpha = 0.3
     else:
         agent_alpha = 1.0
@@ -57,25 +94,79 @@ def plot_agent_positions(database, restrict_to_agents, show_grid):
                     label=str(agent['agentid']),
                     alpha=agent_alpha)
 
-if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print 'Requires path to data file'
-        sys.exit()
-
+def draw_plot(database, grid):
     # Agent IDs to plot. Left blank all agents will be plotted.
     restrict_to_agents = []
 
-    show_grid = False
+    if (output_type == OutputType.AGENT_POSITIONS or
+        output_type == OutputType.GRID_OVERLAY):
+        plot_agent_positions(database, restrict_to_agents, output_type)
 
-    database = setup_database(sys.argv[1])
-    grid = grid.Grid(database)
-    plot_agent_positions(database, restrict_to_agents, show_grid)
+    if output_type != OutputType.AGENT_POSITIONS:
+        draw_grid_overlay(grid, (output_type != OutputType.GRID_WITH_RESULTS))
 
-    if show_grid:
-        draw_grid_overlay(grid)
-        pyplot.legend()
+        if output_type == OutputType.GRID_OVERLAY:
+            pyplot.legend()
 
     pyplot.ylabel('y')
     pyplot.xlabel('x')
     pyplot.title('Agent positions')
     pyplot.show()
+
+def draw_heatmap(database, grid):
+    n = noticeability_for_regions(grid, database)
+
+    # Replace all NOT_APPLICABLE with zero.
+    # TODO: There's GOT to be a cleaner way!
+    for i,x in enumerate(n):
+        if n[i][0] == globals.NOT_APPLICABLE:
+            n[i][0] = 0
+        if n[i][1] == globals.NOT_APPLICABLE:
+            n[i][1] = 0
+
+    # Create a two-dimensional array to hold values for non-deceptive agent's
+    # noticeability. Rearrange for a {(0,0),(0,1),(0,2)...} layout instead of
+    # the region (top-to-bottom, left-to-right).
+    #
+    # TODO: This is upside down.
+    data = []
+    area_of_region = grid.area_of_region()
+
+    for y in range(0, grid.num_divisions):
+        row = []
+        for x in range(0, grid.num_divisions):
+            top_left = [grid.bounding_box[0][0] + (x * grid.divide[0]),
+                        grid.bounding_box[0][1] - (y * grid.divide[1])]
+            bottom_right = [grid.bounding_box[0][0] + ((x + 1) * grid.divide[0]),
+                            grid.bounding_box[0][1] - ((y + 1) * grid.divide[1])]
+            n = noticeability.do_noticeability(database, area_of_region,
+                                               top_left, bottom_right)
+            if n[0] == globals.NOT_APPLICABLE:
+                n[0] = 0
+            if n[1] == globals.NOT_APPLICABLE:
+                n[1] = 0
+
+            row.append(n[1])
+        data.append(row)
+
+    # BuGn, OrRd
+    fig = pyplot.figure()
+    ax1 = fig.add_subplot(111)
+    cmap = cm.get_cmap('OrRd', 10)
+    ax1.imshow(data, interpolation='nearest', cmap=cmap)
+    pyplot.show()
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print 'Requires path to data file'
+        sys.exit()
+
+    output_type = OutputType.HEATMAP
+
+    database = setup_database(sys.argv[1])
+    grid = grid.Grid(database)
+
+    if output_type == OutputType.HEATMAP:
+        draw_heatmap(database, grid)
+    else:
+        draw_plot(database, grid)
