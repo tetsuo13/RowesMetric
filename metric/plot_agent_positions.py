@@ -25,7 +25,7 @@ class OutputType:
     GRID_WITH_RESULTS = 3
     HEATMAP = 4
 
-def draw_grid_overlay(grid, show_region_id):
+def draw_grid_overlay(grid, show_noticeability):
     grid_alpha = 0.5
 
     left_most = grid.bounding_box[0][0]
@@ -43,15 +43,7 @@ def draw_grid_overlay(grid, show_region_id):
                     [top_most, bottom_most],
                     'r--', alpha=grid_alpha)
 
-    if show_region_id:
-        region = 0
-        for x in range(0, grid.num_divisions):
-            for y in range(0, grid.num_divisions):
-                pyplot.text(grid.bounding_box[0][0] + (x * grid.divide[0]) + 0.065,
-                            grid.bounding_box[0][1] - (y * grid.divide[1]) - 0.3,
-                            str(region))
-                region += 1
-    else:
+    if show_noticeability:
         draw_noticeability_in_grid(database, grid)
 
 def noticeability_for_regions(grid, database):
@@ -103,10 +95,9 @@ def draw_plot(database, grid):
         plot_agent_positions(database, restrict_to_agents, output_type)
 
     if output_type != OutputType.AGENT_POSITIONS:
-        draw_grid_overlay(grid, (output_type != OutputType.GRID_WITH_RESULTS))
-
-        if output_type == OutputType.GRID_OVERLAY:
-            pyplot.legend()
+        draw_grid_overlay(grid, (output_type == OutputType.GRID_WITH_RESULTS))
+    else:
+        pyplot.legend()
 
     pyplot.ylabel('y')
     pyplot.xlabel('x')
@@ -161,7 +152,7 @@ if __name__ == '__main__':
         print 'Requires path to data file'
         sys.exit()
 
-    output_type = OutputType.HEATMAP
+    output_type = OutputType.GRID_OVERLAY
 
     database = setup_database(sys.argv[1])
     grid = grid.Grid(database)
