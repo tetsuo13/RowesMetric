@@ -1,0 +1,180 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Analysis of Noticeability and Suspiciousness in Rowe's Exposure Metric</title>
+<meta name="author" content="Andrei Nicholson" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="stylesheet" href="css/main.css" />
+<link rel="stylesheet" href="css/theme/default.css" id="theme" />
+
+<!-- If the query includes '?print-pdf', use the PDF print sheet -->
+<script>
+document.write('<link rel="stylesheet" href="css/print/' +
+               (window.location.search.match(/print-pdf/gi) ? 'pdf' : 'paper') +
+               '.css" type="text/css" media="print" />');
+</script>
+
+<!--[if lt IE 9]>
+<script src="lib/js/html5shiv.js></script>
+<![endif]-->
+
+<script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<style>
+table.further {
+    width: 100%;
+    margin-top: 1em;
+}
+
+li {
+    padding-bottom: 0.5em;
+}
+</style>
+</head>
+<body>
+
+<div class="reveal">
+<div class="slides">
+
+<section>
+    <h2>Analysis of Noticeability and Suspiciousness in Rowe's Exposure Metric</h2>
+
+    <section>
+        <p>
+            UNCG Regional Mathematics and Statistics Conference<br />
+            November 3, 2012
+        </p>
+        <br />
+        <p>Andrei Nicholson and Shan Suthaharan<br />
+            UNC Greensboro<br />Department of Computer Science</p>
+    </section>
+    <section>
+        <ul>
+            <li>Identifying "suspicious" behavior in video surveillance.</li>
+            <li>Rank agents for deceptiveness using Rowe's exposure metric.</li>
+            <li>Noticeability and suspiciousness are two of the most important
+                metrics in measuring the exposure of a deceptive agent.</li>
+        </ul>
+    </section>
+</section>
+
+<section>
+    <h2>Background</h2>
+    <ul>
+        <li>Identifying suspicious or deceptive people (agents) in video.</li>
+        <li>A difficult problem, made easier through analytics.</li>
+    </ul>
+    <br /><br />
+    <p>Huge applications in the video surveillance field:<br />
+        <a href="">Grocery stores</a> -
+        <a href="">Malls</a> -
+        <a href="">Airports</a>
+    </p>
+</section>
+
+<section>
+<h2>Rowe's Metric</h2>
+<p>Metric for "exposure" of a deceptive agent:</p>
+
+    <section>
+    \[
+    E = (1/T)\sum_{t = 0}^{T - 1} s(t) \sum_{i = 0}^{N} v(i, t) n(i, t)
+    \]
+    </section>
+
+    <section>
+    \[
+    E = (1/T)\sum_{t = 0}^{T - 1} \color{Orange}{s(t)} \sum_{i = 0}^{N} v(i, t) \color{Orange}{n(i, t)}
+    \]
+    </section>
+
+    <section>
+    <br />
+    <h3><u>Noticeability</u></h3>
+    \[
+    n(i, t) = \frac{k_3}{k_3 + p(x,y)}
+    \]
+    <p><small>Probability \(p(x,y)\) in region</small></p>
+    </section>
+
+    <section>
+    <br />
+    <h3><u>Suspiciousness</u></h3>
+    \[
+    s(t) = \frac{k_1}{k_1 + p(x,y) q(s,h)}
+    \]
+    <p><small>Distribution \(q(s,h)\) of speed and heading</small></p>
+    </section>
+</section>
+
+<section>
+    <h2>Design</h2>
+
+    <section>
+        <ul>
+            <li>Population of 7 billion, sample size of 9</i>.</li>
+            <li>Microsoft Kinect sensor device for motion capture.</li>
+        </ul>
+        <p><img src="img/kinect.png" alt="Microsoft Kinect motion sensor" /></p>
+    </section>
+
+    <section>
+        <img src="img/plot.png" alt="Agent positions" />
+    </section>
+
+    <section>
+        <img src="img/plot_with_grid.png" alt="Agent positions with regions" />
+    </section>
+
+    <section>
+        <img src="img/grid_with_n.png" alt="Grid showing n" />
+    </section>
+
+    <section>
+        <img src="img/heatmap_nondeceptive.png" alt="Non-deceptive agent noticeability heatmap" />
+        <img src="img/heatmap_deceptive.png" alt="Deceptive agent noticeability heatmap" />
+    </section>
+</section>
+
+<section>
+<h2>Future work</h2>
+
+<ul>
+    <li>Ideal number of regions to split bounding box into should be derived
+        from data instead of using a constant.</li>
+    <li>False positives can occur &mdash; janitor, security guard, children.</li>
+    <li>Use metadata to calculate \(k_1\) and \(k_3\).
+        <table class="further">
+            <tr>
+                <td>\(n(i, t) = \frac{k_3}{k_3 + p(x,y)}\)</td>
+                <td>\(s(t) = \frac{k_1}{k_1 + p(x,y) q(s,h)}\)</td>
+            </tr>
+        </table>
+    </li>
+</ul>
+</section>
+
+<section>
+<h1>Thank you</h1>
+<h2>Any questions?</h2>
+</section>
+
+</div>
+</div>
+
+<script src="lib/js/head.min.js"></script>
+<script src="js/reveal.min.js"></script>
+
+<script>
+Reveal.initialize({
+    controls: false,
+    progress: true,
+    history: true,
+    transition: 'default',
+    theme: Reveal.getQueryHash().theme
+});
+</script>
+
+</body>
+</html>
