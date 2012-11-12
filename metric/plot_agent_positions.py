@@ -2,13 +2,9 @@
 #
 # By Andrei Nicholson
 # Mentored by Dr. Shan Suthaharan
-
-"""
-Notes:
-
-http://matplotlib.org/users/pyplot_tutorial.html
-http://matplotlib.org/examples/pylab_examples/hexbin_demo.html
-"""
+#
+# TODO:
+# - A Noticeability object is being created multiple times for heatmaps.
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as pyplot
@@ -49,11 +45,11 @@ def draw_grid_overlay(grid, show_noticeability):
 def noticeability_for_regions(grid, database):
     area_of_region = grid.area_of_region()
     regions = grid.calculate_regions(database)
-    n = []
+    n = noticeability.Noticeability(grid, database, regions)
+    n_regions = []
     for region in regions:
-        n.append(noticeability.do_noticeability(database, area_of_region,
-                                                region[0], region[1]))
-    return n
+        n_regions.append(n.calculate(region[0], region[1]))
+    return n_regions
 
 def draw_noticeability_in_grid(database, grid):
     n = noticeability_for_regions(grid, database)
@@ -61,14 +57,14 @@ def draw_noticeability_in_grid(database, grid):
 
     for x in range(0, grid.num_divisions):
         for y in range(0, grid.num_divisions):
-            if (n[i][0] == globals.NOT_APPLICABLE and
-                n[i][1] == globals.NOT_APPLICABLE):
+            if (n[n_i][0] == globals.NOT_APPLICABLE and
+                n[n_i][1] == globals.NOT_APPLICABLE):
                 n_i += 1
                 continue
 
             pyplot.text(grid.bounding_box[0][0] + (x * grid.divide[0]) + 0.025,
                         grid.bounding_box[0][1] - (y * grid.divide[1]) - 0.35,
-                        str(n[i][0]) + '\n' + str(n[i][1]))
+                        str(n[n_i][0]) + '\n' + str(n[n_i][1]))
             n_i += 1
 
 def plot_agent_positions(database, restrict_to_agents, output_type):
@@ -105,6 +101,10 @@ def draw_plot(database, grid):
     pyplot.show()
 
 def draw_heatmap(database, grid):
+    """Heatmap for noticeability.
+
+    See: http://matplotlib.org/examples/pylab_examples/hexbin_demo.html
+    """
     n = noticeability_for_regions(grid, database)
 
     # Replace all NOT_APPLICABLE with zero.
@@ -121,7 +121,8 @@ def draw_heatmap(database, grid):
     #
     # TODO: This is upside down.
     data = []
-    area_of_region = grid.area_of_region()
+    n_obj = noticeability.Noticeability(grid, database,
+                                        grid.calculate_regions(database))
 
     for y in range(0, grid.num_divisions):
         row = []
@@ -130,8 +131,7 @@ def draw_heatmap(database, grid):
                         grid.bounding_box[0][1] - (y * grid.divide[1])]
             bottom_right = [grid.bounding_box[0][0] + ((x + 1) * grid.divide[0]),
                             grid.bounding_box[0][1] - ((y + 1) * grid.divide[1])]
-            n = noticeability.do_noticeability(database, area_of_region,
-                                               top_left, bottom_right)
+            n = n_obj.calculate(top_left, bottom_right)
             if n[0] == globals.NOT_APPLICABLE:
                 n[0] = 0
             if n[1] == globals.NOT_APPLICABLE:
@@ -140,7 +140,8 @@ def draw_heatmap(database, grid):
             row.append(n[1])
         data.append(row)
 
-    # BuGn, OrRd
+    # Swap color map for either BuGn or OrRd.
+
     fig = pyplot.figure()
     ax1 = fig.add_subplot(111)
     cmap = cm.get_cmap('OrRd', 10)
@@ -152,7 +153,7 @@ if __name__ == '__main__':
         print 'Requires path to data file'
         sys.exit()
 
-    output_type = OutputType.GRID_OVERLAY
+    output_type = OutputType.HEATMAP
 
     database = setup_database(sys.argv[1])
     grid = grid.Grid(database)
