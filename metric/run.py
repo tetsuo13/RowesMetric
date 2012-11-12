@@ -57,19 +57,16 @@ if __name__ == '__main__':
     # Prepare all regions within bounding box.
     regions = grid.calculate_regions(database)
 
+    n = noticeability.Noticeability(grid, database, regions)
+
     print 'n(region) = [non-deceptive, deceptive]'
     print
 
     if len(restrict_to_regions) > 0:
         for region_num in restrict_to_regions:
             print 'Region', str(region_num),
-            print noticeability.do_noticeability(database,
-                                                 grid.area_of_region(),
-                                                 regions[region_num][0],
-                                                 regions[region_num][1])
+            print n.calculate(regions[region_num][0], regions[region_num][1])
     else:
         for i, region in enumerate(regions):
             print 'Region', str(i),
-            print noticeability.do_noticeability(database,
-                                                 grid.area_of_region(),
-                                                 region[0], region[1])
+            print n.calculate(region[0], region[1])
