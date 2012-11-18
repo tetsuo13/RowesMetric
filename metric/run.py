@@ -37,6 +37,7 @@ import sys
 from RoweMetric.database import setup_database
 from RoweMetric import grid
 from RoweMetric import noticeability
+from RoweMetric import suspiciousness
 
 database = []
 
@@ -58,6 +59,7 @@ if __name__ == '__main__':
     regions = grid.calculate_regions(database)
 
     n = noticeability.Noticeability(grid, database, regions)
+    #s = suspiciousness.Suspiciousness(database, regions)
 
     print 'n(region) = [non-deceptive, deceptive]'
     print
