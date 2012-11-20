@@ -35,9 +35,7 @@ from __future__ import division
 import sys
 
 from RoweMetric.database import setup_database
-from RoweMetric import grid
-from RoweMetric import noticeability
-from RoweMetric import suspiciousness
+from RoweMetric import grid, noticeability, suspiciousness
 
 database = []
 

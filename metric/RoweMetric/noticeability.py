@@ -6,8 +6,7 @@
 # Make all divisions result in a float.
 from __future__ import division
 
-from RoweMetric import exposure
-from RoweMetric import globals
+from RoweMetric import exposure, globals
 
 class Noticeability():
     def __init__(self, grid, database, regions):

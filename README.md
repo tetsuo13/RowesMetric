@@ -22,7 +22,7 @@ sensor records at 30 fps.
 The data file, saved under the name ```data.json``` by default in the same
 directory as the Kinect - Agent Capture application, can be used against
 multiple recording sessions. Each newly added agent is assigned a unique ID.
-The entire data set is stored under the "agents" array, with each agent
+The entire data set is stored under the ```agents``` array, with each agent
 represented as an object within the array. Each agent contains the following
 three keys:
 
@@ -34,6 +34,11 @@ three keys:
 - **agentid**: Unique identifier for the agent. For each new agent added to the
                ```agents``` array, this ID is the previously recorded highest
                ID plus one.
+
+Care was taken to record as little personally identifiable information as
+possible. The agent ID, for example, is nothing more than an interating counter.
+However, future research areas can include using more personally identifiable
+information to increase confidence rate. One such example is height.
 
 Example of a ```data.json``` file with one agent:
 

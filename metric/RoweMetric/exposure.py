@@ -21,8 +21,8 @@ def probability_in_region(database, top_left, bottom_right):
     for agent in database['agents']:
         try:
             for position in agent['positions']:
-                if (position[0] >= top_left[0] and position[0] <= bottom_right[0] and
-                    position[1] <= top_left[1] and position[1] >= bottom_right[1]):
+                if (position.x >= top_left.x and position.x <= bottom_right.x and
+                    position.y <= top_left.y and position.y >= bottom_right.y):
                     if agent['deceptive']:
                         deceptive_agents.append(agent['agentid'])
                     else:

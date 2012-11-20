@@ -11,9 +11,7 @@ import matplotlib.pyplot as pyplot
 import sys
 
 from RoweMetric.database import setup_database
-from RoweMetric import globals
-from RoweMetric import grid
-from RoweMetric import noticeability
+from RoweMetric import globals, grid, noticeability, point
 
 class OutputType:
     AGENT_POSITIONS = 1
@@ -24,18 +22,18 @@ class OutputType:
 def draw_grid_overlay(grid, show_noticeability):
     grid_alpha = 0.5
 
-    left_most = grid.bounding_box[0][0]
-    right_most = grid.bounding_box[0][0] + (grid.num_divisions * grid.divide[0])
-    top_most = grid.bounding_box[0][1]
-    bottom_most = grid.bounding_box[0][1] - (grid.num_divisions * grid.divide[1])
+    left_most = grid.bounding_box[0].x
+    right_most = grid.bounding_box[0].x + (grid.num_divisions * grid.divide.x)
+    top_most = grid.bounding_box[0].y
+    bottom_most = grid.bounding_box[0].y - (grid.num_divisions * grid.divide.y)
 
     for i in range(0, grid.num_divisions + 1):
         pyplot.plot([left_most, right_most],
-                    [grid.bounding_box[0][1] - (i * grid.divide[1]),
-                     grid.bounding_box[0][1] - (i * grid.divide[1])],
+                    [grid.bounding_box[0].y - (i * grid.divide.y),
+                     grid.bounding_box[0].y - (i * grid.divide.y)],
                     'r--', alpha=grid_alpha)
-        pyplot.plot([grid.bounding_box[0][0] + (i * grid.divide[0]),
-                     grid.bounding_box[0][0] + (i * grid.divide[0])],
+        pyplot.plot([grid.bounding_box[0].x + (i * grid.divide.x),
+                     grid.bounding_box[0].x + (i * grid.divide.x)],
                     [top_most, bottom_most],
                     'r--', alpha=grid_alpha)
 
@@ -62,8 +60,8 @@ def draw_noticeability_in_grid(database, grid):
                 n_i += 1
                 continue
 
-            pyplot.text(grid.bounding_box[0][0] + (x * grid.divide[0]) + 0.025,
-                        grid.bounding_box[0][1] - (y * grid.divide[1]) - 0.35,
+            pyplot.text(grid.bounding_box[0].x + (x * grid.divide.x) + 0.025,
+                        grid.bounding_box[0].y - (y * grid.divide.y) - 0.35,
                         str(n[n_i][0]) + '\n' + str(n[n_i][1]))
             n_i += 1
 
@@ -77,8 +75,8 @@ def plot_agent_positions(database, restrict_to_agents, output_type):
         if (len(restrict_to_agents) > 0 and
             not agent['agentid'] in restrict_to_agents):
             continue
-        pyplot.plot([position[0] for position in agent['positions']],
-                    [position[1] for position in agent['positions']],
+        pyplot.plot([position.x for position in agent['positions']],
+                    [position.y for position in agent['positions']],
                     label=str(agent['agentid']),
                     alpha=agent_alpha)
 
@@ -127,10 +125,10 @@ def draw_heatmap(database, grid):
     for y in range(0, grid.num_divisions):
         row = []
         for x in range(0, grid.num_divisions):
-            top_left = [grid.bounding_box[0][0] + (x * grid.divide[0]),
-                        grid.bounding_box[0][1] - (y * grid.divide[1])]
-            bottom_right = [grid.bounding_box[0][0] + ((x + 1) * grid.divide[0]),
-                            grid.bounding_box[0][1] - ((y + 1) * grid.divide[1])]
+            top_left = point.Point(grid.bounding_box[0].x + (x * grid.divide.x),
+                                   grid.bounding_box[0].y - (y * grid.divide.y))
+            bottom_right = point.Point(grid.bounding_box[0].x + ((x + 1) * grid.divide.x),
+                                       grid.bounding_box[0].y - ((y + 1) * grid.divide.y))
             n = n_obj.calculate(top_left, bottom_right)
             if n[0] == globals.NOT_APPLICABLE:
                 n[0] = 0
