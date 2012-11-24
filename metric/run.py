@@ -57,7 +57,7 @@ if __name__ == '__main__':
     regions = grid.calculate_regions(database)
 
     n = noticeability.Noticeability(grid, database, regions)
-    #s = suspiciousness.Suspiciousness(database, regions)
+    s = suspiciousness.Suspiciousness(database, regions)
 
     print 'n(region) = [non-deceptive, deceptive]'
     print

@@ -33,10 +33,9 @@
 from __future__ import division
 
 import math
+import sys
 
-from RoweMetric import exposure
-from RoweMetric import globals
-from RoweMetric import noticeability
+from RoweMetric import exposure, globals, noticeability, point
 
 class Suspiciousness():
     def __init__(self, database, regions):
@@ -46,38 +45,172 @@ class Suspiciousness():
         self._process_regions(database, regions)
 
     def _process_regions(self, database, regions):
-        import sys
         for region_id, region in enumerate(regions):
+            #print region_id
             agents = self._find_all_points_in_region(database['agents'],
                                                      region)
 
             if len(agents) == 0:
                 continue
 
+            print 'There are', str(len(agents)), 'agents in region', str(region_id)
             for agent_id, points_in_region in agents.iteritems():
-                print points_in_region
-                print self._sort_points(points_in_region)
-                sys.exit()
+                speed, heading = self._find_velocity_vector(self._agent(database,
+                                                                        agent_id),
+                                                            region,
+                                                            points_in_region)
+
+                print agent_id, len(points_in_region)
+                #print self._sort_points(points_in_region)
+                print speed, heading
+                #sys.exit()
 
             if region_id == 3:
                 sys.exit()
+
+    def _agent(self, database, agent_id):
+        """Return agent object for a given agent ID.
+        """
+        for agent in database['agents']:
+            if agent['agentid'] == agent_id:
+                return agent
+
+        # Should never get this far.
+        raise Exception('Invalid agent ID needle, ' + str(agent_id))
+
+    def _find_velocity_vector(self, agent, region, points):
+        absolute_points = self._find_absolute_points_in_region(agent, region,
+                                                               points)
+
+        speed = None
+
+        heading = (absolute_points[-1].y - absolute_points[0].y /
+                   absolute_points[-1].x - absolute_points[0].x)
+
+        return speed, heading
+
+    def _find_absolute_points_in_region(self, agent, region, points):
+        """Finds absolute min and max points in region.
+
+        Since the set of points will most likely lie just inside the region
+        boundary, we need to find the point that starts on the region boundary
+        that is part of the total points segment. Return value is the points
+        argument with two additional points, one each at the beginning and end
+        which lies on the region boundary.
+        """
+        # Represents first and last points in region.
+        first_point_in_region, last_point_in_region = points[0], points[-1]
+
+        # One point before the first in the region; first point outside region
+        # for the first point inside. Same thing for last point.
+        point_before_first = self._get_adjacent_point(agent['positions'],
+                                                      first_point_in_region,
+                                                      True)
+        point_after_last = self._get_adjacent_point(agent['positions'],
+                                                    last_point_in_region,
+                                                    False)
+
+        # Find points which are on the region boundary.
+        first_point = self._region_line_segment_intersect(region,
+                                                          [first_point_in_region,
+                                                           point_before_first])
+        last_point = self._region_line_segment_intersect(region,
+                                                         [last_point_in_region,
+                                                          point_after_last])
+
+        if first_point is not None:
+            points = first_point + points
+        if last_point is not None:
+            points += last_point
+
+        return points
+
+    def _intersection(self, line_a, line_b):
+        """Find point of intersection between two lines.
+
+        Implementation of algorithm described by Paul Bourke, "Intersection
+        point of two lines in 2 dimensions". See
+        http://paulbourke.net/geometry/pointlineplane/
+        """
+        d = (line_b[1].y - line_b[0].y) * (line_a[1].x - line_a[0].x) - \
+            (line_b[1].x - line_b[0].x) * (line_a[1].y - line_a[0].y)
+
+        n_a = (line_b[1].x - line_b[0].x) * (line_a[0].y - line_b[0].y) - \
+              (line_b[1].y - line_b[0].y) * (line_a[0].x - line_b[0].x)
+
+        n_b = (line_a[1].x - line_a[0].x) * (line_a[0].y - line_b[0].y) - \
+              (line_a[1].y - line_a[0].y) * (line_a[0].x - line_b[0].x)
+
+        if d == 0:
+            return None
+
+        ua = n_a / d
+        ub = n_b / d
+
+        if ua >= 0.0 and ua <= 1.0 and ub >= 0.0 and ub <= 1.0:
+            return point.Point(line_a[0].x + (ua * (line_a[1].x - line_a[0].x)),
+                               line_a[0].y + (ua * (line_a[1].y - line_a[0].y)))
+        return None
+
+    def _region_line_segment_intersect(self, region, segment):
+        """Point of intersection between line segment and region boundary.
+
+        Given a line segment, find which of the four line segments that makes
+        up a region it intersects with. Returns that intersection point.
+        """
+        # Line segments that comprise region bounary. Lines drawn from left to
+        # right, top to bottom.
+        boundary = [[point.Point(region[0].x, region[0].y),
+                     point.Point(region[1].x, region[0].y)], # Top
+                    [point.Point(region[0].x, region[1].y),
+                     point.Point(region[1].x, region[1].y)], # Bottom
+                    [point.Point(region[0].x, region[0].y),
+                     point.Point(region[0].x, region[1].y)], # Left
+                    [point.Point(region[1].x, region[0].y),
+                     point.Point(region[1].x, region[1].y)]] # Right
+
+        for piece in boundary:
+            result = self._intersection(piece, segment)
+            if result is not None:
+                return result
+
+        # Segment doesn't intersect region boundary.
+        return None
+
+    def _get_adjacent_point(self, points, needle, get_previous_point):
+        """Retrieves the previous or next point from needle.
+        """
+        for i, point in enumerate(points):
+            if point == needle:
+                if get_previous_point:
+                    if i == 0:
+                        return point
+                    return points[i + 1]
+                else:
+                    if i == len(points):
+                        return point
+                    return points[i - 1]
+
+        # Should never get this far.
+        raise Exception('Invalid needle requested')
 
     def _find_all_points_in_region(self, agents, region):
         agents_in_region = {}
 
         for agent in agents:
+            #print 'Processing agent', str(agent['agentid'])
             points_in_region = []
 
             for position in agent['positions']:
-                if (position[0] >= region[0][0] and
-                    position[0] <= region[1][0] and
-                    position[1] <= region[0][1] and
-                    position[1] >= region[1][1]):
+                if (position.x >= region[0].x and position.x <= region[1].x and
+                    position.y <= region[0].y and position.y >= region[1].y):
                     points_in_region.append(position)
 
             if len(points_in_region) > 0:
+                #print '\t', str(len(points_in_region)), 'points'
                 agents_in_region[agent['agentid']] = points_in_region
 
+        #print str(len(agents_in_region)), 'agents were found'
         return agents_in_region
 
     def _sort_points(self, points):
@@ -86,11 +219,11 @@ class Suspiciousness():
         Represent points in polar coordinates with respect to the center point
         and use the angle as the sorting key.
         """
-        x, y = zip(*((p[0], p[1]) for p in points))
+        x, y = zip(*((p.x, p.y) for p in points))
         avg_x = sum(x) / len(x)
         avg_y = sum(y) / len(y)
         return sorted(points,
-                      key=lambda p: math.atan2(p[0] - avg_x, p[1] - avg_y))
+                      key=lambda p: math.atan2(p.x - avg_x, p.y - avg_y))
 
 def probability_speed_and_heading(database, top_left, bottom_left):
     position_2 = get_second_operand(i, position)
