@@ -36,7 +36,7 @@ three keys:
                ID plus one.
 
 Care was taken to record as little personally identifiable information as
-possible. The agent ID, for example, is nothing more than an interating counter.
+possible. The agent ID, for example, is nothing more than an iterating counter.
 However, future research areas can include using more personally identifiable
 information to increase confidence rate. One such example is height.
 
